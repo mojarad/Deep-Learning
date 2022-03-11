@@ -1,0 +1,251 @@
+
+# # Recurrent Neural Networks
+
+# In[1]:
+
+
+import pandas as pd
+import numpy as np
+get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
+
+
+# ## Time series forecasting
+
+# In[2]:
+
+
+df = pd.read_csv('../data/cansim-0800020-eng-6674700030567901031.csv',
+                 skiprows=6, skipfooter=9,
+                 engine='python')
+df
+
+
+# In[3]:
+
+
+from pandas.tseries.offsets import MonthEnd
+
+
+# In[4]:
+
+
+df['Adjustments'] = pd.to_datetime(df['Adjustments']) + MonthEnd(1)
+df = df.set_index('Adjustments')
+df.head()
+
+
+# In[5]:
+
+
+df.plot()
+
+
+# In[6]:
+
+
+split_date = pd.Timestamp('01-01-2011')
+
+
+# In[7]:
+
+
+train = df.loc[:split_date, ['Unadjusted']]
+test = df.loc[split_date:, ['Unadjusted']]
+
+
+# In[8]:
+
+
+test.shape
+
+
+# In[9]:
+
+
+train.shape
+
+
+# In[10]:
+
+
+ax = train.plot()
+test.plot(ax=ax)
+plt.legend(['train', 'test'])
+
+
+# In[11]:
+
+
+from sklearn.preprocessing import MinMaxScaler
+
+sc = MinMaxScaler()
+
+train_sc = sc.fit_transform(train)
+test_sc = sc.transform(test)
+
+
+# In[12]:
+
+
+train_sc[:]
+
+
+# In[13]:
+
+
+test_sc
+
+
+# In[14]:
+
+
+X_train = train_sc[:-1]
+y_train = train_sc[1:]
+
+X_test = test_sc[:-1]
+y_test = test_sc[1:]
+
+
+# ### Fully connected predictor
+
+# In[15]:
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+import keras.backend as K
+from keras.callbacks import EarlyStopping
+
+
+# In[16]:
+
+
+K.clear_session()
+
+model = Sequential()
+model.add(Dense(12, input_dim=1, activation='relu'))
+model.add(Dense(1))
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.summary()
+
+
+# In[17]:
+
+
+early_stop = EarlyStopping(monitor='loss', verbose=1)
+
+
+# In[18]:
+
+
+model.fit(X_train, y_train, epochs=200,
+          batch_size=2, verbose=1,
+          callbacks=[early_stop])
+
+
+# In[19]:
+
+
+y_pred = model.predict(X_test)
+
+
+# In[20]:
+
+
+plt.plot(y_test)
+plt.plot(y_pred)
+
+
+# ### Recurrent predictor
+
+# In[21]:
+
+
+from keras.layers import LSTM
+
+
+# In[22]:
+
+
+X_train.shape
+
+
+# In[23]:
+
+
+y_test.shape
+
+
+# In[24]:
+
+
+X_test.shape
+
+
+# In[25]:
+
+
+y_train.shape
+
+
+# In[26]:
+
+
+#3D tensor with shape (batch_size, timesteps, input_dim)
+X_train[:, None].shape
+
+
+# In[27]:
+
+
+#3D tensor 
+X_train_t = X_train[:, None]
+X_test_t = X_test[:, None]
+
+
+# In[28]:
+
+
+X_train[:, None].shape
+
+
+# In[29]:
+
+
+X_test[:, None].shape
+
+
+# In[30]:
+
+
+K.clear_session()
+model = Sequential()
+
+model.add(LSTM(6, input_dim=1))
+
+model.add(Dense(1))
+
+model.compile(loss='mean_squared_error', optimizer='adam')
+
+
+# In[31]:
+
+
+model.fit(X_train_t, y_train,
+          epochs= 3, batch_size=128,
+          callbacks=[early_stop])
+
+
+# In[32]:
+
+
+y_test_pred = model.predict(X_test_t)
+
+
+# In[33]:
+
+
+plt.plot(y_test)
+plt.plot(y_pred)
+
