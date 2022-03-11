@@ -1,0 +1,209 @@
+# # Machine Learning
+
+# 
+# You've just been hired at a real estate investment firm and they would like you to build a model for pricing houses. You are given a dataset that contains data for house prices and a few features like number of bedrooms, size in square feet and age of the house. Let's see if you can build a model that is able to predict the price. In this exercise we extend what we have learned about linear regression to a dataset with more than one feature. Here are the steps to complete it:
+# 
+# 1. Load the dataset ../data/housing-data.csv
+# - plot the histograms for each feature
+# - create 2 variables called X and y: X shall be a matrix with 3 columns (sqft,bdrms,age) and y shall be a vector with 1 column (price)
+# - create a linear regression model in Keras with the appropriate number of inputs and output
+# - split the data into train and test with a 20% test size
+# - train the model on the training set and check its accuracy on training and test set
+# - how's your model doing? Is the loss growing smaller?
+# - try to improve your model with these experiments:
+#     - normalize the input features with one of the rescaling techniques mentioned above
+#     - use a different value for the learning rate of your model
+#     - use a different optimizer
+# - once you're satisfied with training, check the R2score on the test set
+
+# In[12]:
+
+
+get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+
+# In[13]:
+
+
+df = pd.read_csv('../data/housing-data.csv')
+df.head()
+
+
+# In[14]:
+
+
+df.columns
+
+
+# In[15]:
+
+
+# create 2 variables called X and y:
+# X shall be a matrix with 3 columns (sqft,bdrms,age)
+# and y shall be a vector with 1 column (price)
+X = df[['sqft', 'bdrms', 'age']].values
+y = df['price'].values
+
+
+# In[16]:
+
+
+X
+
+
+# In[17]:
+
+
+y
+
+
+# In[18]:
+
+
+get_ipython().system('pip install keras')
+get_ipython().system('pip install tensorflow')
+
+
+# In[19]:
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+# from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
+
+
+# In[20]:
+
+
+# create a linear regression model in Keras
+# with the appropriate number of inputs and output
+model = Sequential()
+model.add(Dense(1, input_dim=3))
+model.compile(Adam(lr=0.8),'mean_squared_error')
+
+
+# In[21]:
+
+
+from sklearn.model_selection import train_test_split
+
+
+# In[22]:
+
+
+# split the data into train and test with a 20% test size
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+
+# In[23]:
+
+
+# train the model on the training set and check its accuracy on training and test set
+# how's your model doing? Is the loss growing smaller?
+model.fit(X_train, y_train)
+
+
+# In[24]:
+
+
+from sklearn.metrics import r2_score
+
+
+# In[25]:
+
+
+# check the R2score on training and test set (probably very bad)
+
+y_train_pred = model.predict(X_train)
+y_test_pred = model.predict(X_test)
+
+print("The R2 score on the Train set is:     {:} ".format(r2_score(y_train, y_train_pred)))
+print("The R2 score on the Test set is:      {:}".format(r2_score(y_test, y_test_pred)))
+
+
+# In[26]:
+
+
+# try to improve your model with these experiments:
+#     - normalize the input features with one of the rescaling techniques mentioned above
+#     - use a different value for the learning rate of your model
+#     - use a different optimizer
+
+
+# In[27]:
+
+
+df['price'].plot(kind='hist')
+
+
+# In[28]:
+
+
+df.describe()
+
+
+# In[29]:
+
+
+df['sqft1000'] = df['sqft']/1000
+df['age10'] = df['age']/10
+df['price100k'] = df['price']/100000
+
+
+# In[30]:
+
+
+X = df[['sqft1000', 'bdrms', 'age10']].values
+y = df['price100k'].values
+
+
+# In[31]:
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+
+# In[32]:
+
+
+model = Sequential()
+model.add(Dense(1, input_dim=3))
+model.compile(Adam(lr=0.1), 'mean_squared_error')
+model.fit(X_train, y_train, epochs=20)
+
+
+# In[33]:
+
+
+# once you're satisfied with training, check the R2score on the test set
+
+y_train_pred = model.predict(X_train)
+y_test_pred = model.predict(X_test)
+
+print("The R2 score on the Train set is:    {:}".format(r2_score(y_train, y_train_pred)))
+print("The R2 score on the Test set is:     {:}".format(r2_score(y_test, y_test_pred)))
+
+
+# In[34]:
+
+
+model.fit(X_train, y_train, epochs=40 , verbose=0)
+
+
+# In[35]:
+
+
+# once you're satisfied with training, check the R2score on the test set
+
+y_train_pred = model.predict(X_train)
+y_test_pred = model.predict(X_test)
+
+print("The R2 score on the Train set is:   {:}".format(r2_score(y_train, y_train_pred)))
+print("The R2 score on the Test set is:    {:}".format(r2_score(y_test, y_test_pred)))
+
+
+
