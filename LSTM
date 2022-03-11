@@ -1,0 +1,70 @@
+# In[1]:
+
+
+from keras.datasets import reuters
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
+
+
+# In[2]:
+
+
+from tensorflow.keras.datasets import reuters
+get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+
+# In[10]:
+
+
+(X_train, y_train), (X_test, y_test) = reuters.load_data('C..//reuters.npz',
+                                                            num_words=1000 , test_split=0.2)
+
+
+# In[11]:
+
+
+max_len = 100
+X_train = pad_sequences(X_train, maxlen=max_len) 
+X_test = pad_sequences(X_test, maxlen=max_len)
+
+
+# In[12]:
+
+
+y_train = to_categorical(y_train) 
+y_test = to_categorical(y_test) 
+
+
+# In[13]:
+
+
+model = Sequential()
+model.add(Embedding(1000 ,120))
+model.add(LSTM(120))
+model.add(Dense(46, activation='softmax'))
+
+
+# In[14]:
+
+
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+
+# In[15]:
+
+
+# es = EarlyStopping()
+# history = model.fit(X_train, y_train, batch_size=2048, epochs=5, callbacks=[es], validation_data=(X_test, y_test))
+
+
+# In[16]:
+
+
+history = model.fit(X_train, y_train, batch_size=2048, epochs=1, validation_data=(X_test, y_test))
+
