@@ -1,0 +1,283 @@
+# ## Machine Learning
+# 
+# Your boss was extremely happy with your work on the housing price prediction model and decided to entrust you with a more challenging task. They've seen a lot of people leave the company recently and they would like to understand why that's happening. They have collected historical data on employees and they would like you to build a model that is able to predict which employee will leave next. The would like a model that is better than random guessing. They also prefer false negatives than false positives, in this first phase. Fields in the dataset include:
+# 
+# - Employee satisfaction level
+# - Last evaluation
+# - Number of projects
+# - Average monthly hours
+# - Time spent at the company
+# - Whether they have had a work accident
+# - Whether they have had a promotion in the last 5 years
+# - Department
+# - Salary
+# - Whether the employee has left
+# 
+# Your goal is to predict the binary outcome variable `left` using the rest of the data. Since the outcome is binary, this is a classification problem. Here are some things you may want to try out:
+# 
+# 1. load the dataset at ../data/HR_comma_sep.csv, inspect it with `.head()`, `.info()` and `.describe()`.
+# - Establish a benchmark: what would be your accuracy score if you predicted everyone stay?
+# - Check if any feature needs rescaling. You may plot a histogram of the feature to decide which rescaling method is more appropriate.
+# - convert the categorical features into binary dummy columns. You will then have to combine them with the numerical features using `pd.concat`.
+# - do the usual train/test split with a 20% test size
+# - play around with learning rate and optimizer
+# - check the confusion matrix, precision and recall
+# - check if you still get the same results if you use a 5-Fold cross validation on all the data
+# - Is the model good enough for your boss?
+# 
+# As you will see in this exercise, the a logistic regression model is not good enough to help your boss. In the next chapter we will learn how to go beyond linear models.
+# 
+# This dataset comes from https://www.kaggle.com/ludobenistant/hr-analytics/ and is released under [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/).
+
+# In[1]:
+
+
+get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+
+# In[2]:
+
+
+# load the dataset at ../data/HR_comma_sep.csv, inspect it with `.head()`, `.info()` and `.describe()`.
+
+
+# In[3]:
+
+
+df = pd.read_csv('../data/HR_comma_sep.csv')
+
+
+# In[4]:
+
+
+df.head()
+
+
+# In[5]:
+
+
+df.info()
+
+
+# In[6]:
+
+
+df.describe()
+
+
+# In[7]:
+
+
+df['left'].value_counts()
+
+
+# In[8]:
+
+
+# Check if any feature needs rescaling.
+# You may plot a histogram of the feature to decide which rescaling method is more appropriate.
+df['average_montly_hours'].plot(kind='hist')
+
+
+# In[9]:
+
+
+df['average_montly_hours_100'] = df['average_montly_hours']/100.0
+
+
+# In[10]:
+
+
+df['time_spend_company'].plot(kind='hist')
+
+
+# In[11]:
+
+
+df['time_spend_company_100'] = df['time_spend_company']/100.0
+
+
+# In[12]:
+
+
+df
+
+
+# In[13]:
+
+
+# convert the categorical features into binary dummy columns.
+# You will then have to combine them with
+# the numerical features using `pd.concat`.
+
+
+# In[14]:
+
+
+df.columns
+
+
+# In[15]:
+
+
+df[['sales', 'salary']]
+
+
+# In[16]:
+
+
+df_dummies = pd.get_dummies(df[['sales', 'salary']])
+
+
+# In[17]:
+
+
+df_dummies.head()
+
+
+# In[18]:
+
+
+df.columns
+
+
+# In[19]:
+
+
+X = pd.concat([df[['satisfaction_level', 'last_evaluation', 'number_project',
+                     'average_montly_hours_100' , 'time_spend_company_100', 'Work_accident', 
+               'promotion_last_5years']],
+               df_dummies], axis=1).values
+y = df['left'].values
+
+
+# In[20]:
+
+
+X.shape
+
+
+# In[21]:
+
+
+from sklearn.model_selection import train_test_split
+
+
+# In[22]:
+
+
+# do the usual train/test split with a 20% test size
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+
+# In[25]:
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+
+
+# In[26]:
+
+
+model = Sequential()
+model.add(Dense(1, input_dim=20, activation='sigmoid'))
+model.compile(Adam(lr=0.5), 'binary_crossentropy', metrics=['accuracy'])
+
+
+# In[27]:
+
+
+model.fit(X_train, y_train)
+
+
+# In[29]:
+
+
+# y_test_pred = model.predict_classes(X_test)
+y_test_pred = model.predict(X_test) >0.5
+
+
+# In[30]:
+
+
+# واقعی
+y_test
+
+
+# In[31]:
+
+
+# پیش بینی شده
+y_test_pred
+
+
+# In[32]:
+
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_test, y_test_pred)
+
+
+# In[33]:
+
+
+from keras.wrappers.scikit_learn import KerasClassifier
+
+
+# In[34]:
+
+
+# check if you still get the same results if you use a 5-Fold cross validation on all the data
+
+
+# In[35]:
+
+
+def build_logistic_regression_model():
+    model = Sequential()
+    model.add(Dense(1, input_dim=20, activation='sigmoid'))
+    model.compile(Adam(lr=0.5), 'binary_crossentropy', metrics=['accuracy'])
+    return model
+
+model = KerasClassifier(build_fn=build_logistic_regression_model,
+                        epochs=10, verbose=0)
+
+
+# In[36]:
+
+
+from sklearn.model_selection import KFold, cross_val_score
+
+
+# In[37]:
+
+
+cv = KFold(5, shuffle=True)
+scores = cross_val_score(model, X, y, cv=cv)
+
+print("The cross validation accuracy is: {:}  ".format(scores.mean()))
+
+
+# In[38]:
+
+
+scores
+
+
+# In[39]:
+
+
+# Is the model good enough for your boss?
+
+
+# No, the model is not good enough for my boss, since it performs no better than the benchmark.
+
+
+
+
